@@ -11,7 +11,7 @@ object SparkTest01 {
         val sc = new SparkContext(conf)
 
         val fileRDD: RDD[String] = sc.textFile("input/agent.log")
-
+        //统计各个省份总点击数
         val arrRDD: RDD[Array[String]] = fileRDD.map(line => {
             line.split(" ")
         })

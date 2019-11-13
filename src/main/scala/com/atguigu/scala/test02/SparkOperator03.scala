@@ -10,7 +10,7 @@ object SparkOperator03 {
         conf.setAppName("Spark Creation")
         val sc: SparkContext = new SparkContext(conf)
 
-        val arrRDD: RDD[Int] = sc.parallelize(1 to 10,4)
+        val arrRDD: RDD[Int] = sc.parallelize(1 to 10, 4)
 
         //每次处理一条数据
         //val mapRDD: RDD[Int] = arrRDD.map(_*2)
@@ -77,7 +77,7 @@ object SparkOperator03 {
         println(rdd6.collect().mkString(","))
         println(rdd7.collect().mkString(","))*/
 
-//        println(mapRDD.collect().mkString(","))
+        //        println(mapRDD.collect().mkString(","))
 
         //val rdd1: RDD[(Int, String)] = sc.parallelize(Array((1, "a"), (2, "b"), (3, "c"), (4, "d")))
         //val value: RDD[(Int, String)] = rdd1.partitionBy(new HashPartitioner(3))
@@ -98,14 +98,27 @@ object SparkOperator03 {
         })
         println(value1.collect().mkString(","))*/
 
-        val rdd = sc.parallelize(List(("a",3),("a",2),("c",4),("b",3),("c",6),("c",8)),2)
+        val rdd = sc.parallelize(List(("a", 3), ("a", 2), ("c", 4), ("b", 3), ("c", 6), ("c", 8)), 2)
         // aggregateByKey 先对分区内进行操作，之后再对区分间进行操作
         // 第一个参数 zerovalue初始值，当分区内只有一个数据时，会和初始值进行比较
         // 第二个参数 第一个放分区内的操作
         // 第二个参数 第二个放分区间的操作
-        val value: RDD[(String, Int)] = rdd.aggregateByKey(Int.MinValue)(math.max(_, _), _ +_)
+        val value: RDD[(String, Int)] = rdd.aggregateByKey(Int.MinValue)(math.max(_, _), _ + _)
 
-        println(value.collect().mkString(","))
+        //第一个参数做类型的转换
+        //第二个参数放分区内的操作
+        //第三个参数放分区间的操作
+        val value1: RDD[(String, (Int, Int))] = rdd.combineByKey(
+            (x: Int) => (x, 1),//createCombiner 是将分区中的每种key调用一次，变成其他数据格式，其他数据不做改变
+            (x: (Int, Int), y: Int) => (x._1 + y, x._2 + 1),//将数据相加，计数+1
+            (x: (Int, Int), y: (Int, Int)) => (x._1 + y._1, x._2 + y._2)//将各个分区中的数据进行合并
+        )
+        val value2: RDD[(String, Int)] = value1.map {
+            case ((s: String, (x: Int, y: Int))) => {
+                (s, x / y)
+            }
+        }
+        println(value2.collect().mkString(","))
         sc.stop()
     }
 }
